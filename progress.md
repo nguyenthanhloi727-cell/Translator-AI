@@ -50,7 +50,7 @@ Ràng buộc:
 ## Giai đoạn (mỗi mục: làm -> test -> commit -> push -> tick)
 
 - [x] **0. Khởi tạo**: progress.md, CLAUDE.md, git init, .gitignore, repo public MIT
-- [ ] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
+- [x] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
 - [ ] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
 - [ ] **3. Dịch**: benchmark vài model Anh->Việt chạy CPU, chọn cái cân bằng tốc độ/chất lượng; thêm cache + từ điển
 - [ ] **4. Overlay**: cửa sổ trong suốt click-through, đặt bản dịch trên chữ gốc, chỉnh font/vị trí/vùng quét
@@ -70,3 +70,8 @@ Ràng buộc:
 - 2026-11-20: tạo khung dự án, chốt Rust + local + an toàn.
 - 2026-11-20: đổi hướng từ nghe giọng nói sang OCR chữ trên màn hình theo ví dụ của streamer.
 - 2026-11-20: chốt chỉ dịch phụ đề; nguồn hình là PS5 nối PC nên bỏ ràng buộc Borderless/anti-cheat, thêm overlay Browser Source cho OBS.
+- 2026-11-20: **xong giai đoạn 1 (capture)**. Cài Rust 1.100 + VS Build Tools. Code: `src/capture.rs` (Windows Graphics Capture), `src/frame.rs` (vùng, hash đổi khung, BMP), `src/main.rs` (CLI `translator-ai capture --list|--window|--monitor|--region|--seconds|--save`). Dùng GPU, tự lùi về WARP (CPU) nếu không có GPU.
+  - Test: 5 unit test pass, clippy sạch, chạy thật trên màn hình/cửa sổ: nhận ~48-50 khung/giây.
+  - Đo: copy GPU->CPU vùng phụ đề 1200x150 tb **0.32 ms** (max 1.27); cả màn hình tb 4.9 ms. Nên chỉ copy vùng phụ đề. Phát hiện đổi khung đúng: vùng tĩnh chỉ 1 khung "đổi", vùng chuyển động gần như mọi khung.
+  - Độ trễ khung -> app: tb 0.3-1.7 ms, max 32-40 ms (thỉnh thoảng trễ, đo bằng mốc thời gian của Windows nên sai số vài ms, có lúc ra số âm). File .exe release 215 KB.
+  - Chưa đo tải CPU % và chưa thử với hình PS5/Elgato thật.
