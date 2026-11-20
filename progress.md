@@ -51,7 +51,7 @@ Ràng buộc:
 
 - [x] **0. Khởi tạo**: progress.md, CLAUDE.md, git init, .gitignore, repo public MIT
 - [x] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
-- [ ] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
+- [x] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
   - Dùng Windows.Media.Ocr (có sẵn, chạy CPU, không tải model). Thêm feature windows crate cần thiết như Media_Ocr, Graphics_Imaging, Storage_Streams.
   - Module mới `src/ocr.rs`: nhận `Frame`, trả về text và vị trí dòng. Báo lỗi rõ nếu máy thiếu gói ngôn ngữ OCR tiếng Anh.
   - Chỉ OCR khi vùng phụ đề đổi (dùng cờ `changed` của capture).
@@ -81,3 +81,8 @@ Ràng buộc:
   - Đo: copy GPU->CPU vùng phụ đề 1200x150 tb **0.32 ms** (max 1.27); cả màn hình tb 4.9 ms. Nên chỉ copy vùng phụ đề. Phát hiện đổi khung đúng: vùng tĩnh chỉ 1 khung "đổi", vùng chuyển động gần như mọi khung.
   - Độ trễ khung -> app: tb 0.3-1.7 ms, max 32-40 ms (thỉnh thoảng trễ, đo bằng mốc thời gian của Windows nên sai số vài ms, có lúc ra số âm). File .exe release 215 KB.
   - Chưa đo tải CPU % và chưa thử với hình PS5/Elgato thật.
+- 2026-11-20: **xong giai đoạn 2 (OCR)**. Code: `src/ocr.rs` (Windows.Media.Ocr, en-US, có phóng to bilinear x2 cho vùng cao dưới 100 px, trả dòng chữ + khung vị trí theo toạ độ ảnh gốc, báo lỗi kèm lệnh cài gói OCR nếu thiếu), `src/frame.rs` thêm `decode_bmp`, `src/main.rs` thêm `translator-ai ocr --image file.bmp [--scale N]` và `ocr [--window|--monitor] [--region] [--seconds] [--scale]` (chỉ OCR khi cờ `changed` của capture bật).
+  - Test: 12 unit test pass (đọc chữ trắng trên nền tối, chữ đen trên nền sáng, chữ có bóng trên nền màu, chữ nhỏ 16 px cần phóng to, ảnh trắng không ra chữ, ảnh quá lớn bị từ chối, khung vị trí đúng), clippy sạch, release build chạy được (.exe 245 KB).
+  - Đo: ảnh tự render GDI 1200x90 (chữ 34 px, có bóng): OCR tb **4.5 ms**. Chạy thật trên màn hình PC, vùng 1400x120: tb **10-12 ms** (vượt mục tiêu 30-100 ms, nhưng đây là vùng nhỏ và CPU máy dev).
+  - Độ chính xác: ảnh tự render 100% đúng chữ. Trên vùng màn hình thật (UI nhỏ, chữ lẫn nền) đọc sai nhiều ký tự, như dự đoán với chữ nhỏ nhiễu.
+  - Chưa kiểm chứng: ảnh phụ đề GTA thật (chưa có ảnh mẫu từ streamer), chưa thử với hình PS5/OBS Projector. Cần ảnh thật để đánh giá độ chính xác trước khi sang giai đoạn 3.

@@ -80,9 +80,57 @@ pub fn encode_bmp(f: &Frame) -> Vec<u8> {
     out
 }
 
+/// Decode an uncompressed 24-bit or 32-bit BMP into a BGRA frame.
+pub fn decode_bmp(data: &[u8]) -> Result<Frame, String> {
+    let u32_at = |o: usize| data.get(o..o + 4).map(|b| u32::from_le_bytes(b.try_into().unwrap()));
+    if data.get(..2) != Some(b"BM") {
+        return Err("khong phai file BMP".into());
+    }
+    let off = u32_at(10).ok_or("BMP bi cut")? as usize;
+    let width = u32_at(18).ok_or("BMP bi cut")? as i32;
+    let height = u32_at(22).ok_or("BMP bi cut")? as i32;
+    let bpp = data.get(28..30).map(|b| u16::from_le_bytes([b[0], b[1]])).ok_or("BMP bi cut")?;
+    let compression = u32_at(30).ok_or("BMP bi cut")?;
+    if compression != 0 || (bpp != 24 && bpp != 32) || width <= 0 || height == 0 {
+        return Err("chi ho tro BMP 24/32-bit khong nen".into());
+    }
+    let (w, h) = (width as usize, height.unsigned_abs() as usize);
+    let bottom_up = height > 0;
+    let bytes = bpp as usize / 8;
+    let row = (w * bytes).div_ceil(4) * 4;
+    if data.len() < off + row * h {
+        return Err("BMP bi cut".into());
+    }
+    let mut bgra = vec![255u8; w * h * 4];
+    for y in 0..h {
+        let src_y = if bottom_up { h - 1 - y } else { y };
+        let line = &data[off + src_y * row..off + src_y * row + w * bytes];
+        for (x, px) in line.chunks_exact(bytes).enumerate() {
+            let d = (y * w + x) * 4;
+            bgra[d..d + 3].copy_from_slice(&px[..3]);
+        }
+    }
+    Ok(Frame { width: w as u32, height: h as u32, bgra })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bmp_roundtrip() {
+        let mut bgra = vec![255u8; 5 * 3 * 4];
+        for (i, b) in bgra.iter_mut().enumerate() {
+            if i % 4 != 3 {
+                *b = (i * 7) as u8;
+            }
+        }
+        let f = Frame { width: 5, height: 3, bgra: bgra.clone() };
+        let d = decode_bmp(&encode_bmp(&f)).unwrap();
+        assert_eq!((d.width, d.height), (5, 3));
+        assert_eq!(d.bgra, bgra);
+        assert!(decode_bmp(b"nope").is_err());
+    }
 
     #[test]
     fn parse_region_ok() {
