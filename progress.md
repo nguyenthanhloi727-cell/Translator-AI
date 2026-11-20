@@ -92,3 +92,4 @@ Ràng buộc:
   - Số đo Rust lần này nhiễu: máy đang chạy game (CPU ~50%), baseline lên 900-1000 ms (lúc máy rảnh là 520-540 ms), vmap 66k còn ~590 ms cùng điều kiện. Chưa có số sạch.
   - Kết luận: vmap đánh đổi chất lượng lấy ~35% tốc độ, chưa đủ chạm 150 ms nên không bật. Hướng còn lại: MKL (cần nguồn MKL đáng tin và build không tải binary lúc build), hoặc model nhỏ hơn/chưng cất riêng cho câu phụ đề, hoặc chấp nhận ~500 ms vì dịch chạy luồng riêng, cache chặn câu lặp và phụ đề GTA thường hiện vài giây.
 
+- 2026-11-20: người dùng chấp nhận độ trễ dịch ~0,5 giây (cache miss), bỏ mục tiêu 50-150 ms. Giai đoạn 3 coi là xong. Đo lại ở giai đoạn 7 trên máy streamer.
