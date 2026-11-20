@@ -51,7 +51,7 @@ Ràng buộc:
 
 - [x] **0. Khởi tạo**: progress.md, CLAUDE.md, git init, .gitignore, repo public MIT
 - [x] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
-- [ ] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
+- [x] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
   - Dùng Windows.Media.Ocr (có sẵn, chạy CPU, không tải model). Thêm feature windows crate cần thiết như Media_Ocr, Graphics_Imaging, Storage_Streams.
   - Module mới `src/ocr.rs`: nhận `Frame`, trả về text và vị trí dòng. Báo lỗi rõ nếu máy thiếu gói ngôn ngữ OCR tiếng Anh.
   - Chỉ OCR khi vùng phụ đề đổi (dùng cờ `changed` của capture).
@@ -81,3 +81,7 @@ Ràng buộc:
   - Đo: copy GPU->CPU vùng phụ đề 1200x150 tb **0.32 ms** (max 1.27); cả màn hình tb 4.9 ms. Nên chỉ copy vùng phụ đề. Phát hiện đổi khung đúng: vùng tĩnh chỉ 1 khung "đổi", vùng chuyển động gần như mọi khung.
   - Độ trễ khung -> app: tb 0.3-1.7 ms, max 32-40 ms (thỉnh thoảng trễ, đo bằng mốc thời gian của Windows nên sai số vài ms, có lúc ra số âm). File .exe release 215 KB.
   - Chưa đo tải CPU % và chưa thử với hình PS5/Elgato thật.
+- 2026-11-20: **xong giai đoạn 2 (OCR)**. Code: `src/ocr.rs` (Windows.Media.Ocr, en-US, trả dòng chữ + khung bao), `src/frame.rs` thêm `decode_bmp`, CLI `translator-ai ocr --image file.bmp` và `ocr --window|--monitor --region ... --seconds N` (chỉ OCR khi vùng đổi). Báo lỗi rõ kèm cách cài nếu thiếu gói OCR tiếng Anh.
+  - Test: 13 unit test pass, clippy sạch, release build chạy được (exe 247 KB). Ảnh mẫu tự render bằng GDI (chữ trắng/vàng, viền đen, nền tối/sáng, font 18-48 px): chính xác từ 100% ở mọi cỡ, riêng câu dài viền vàng trên nền sáng đạt ngưỡng 80% của test.
+  - Đo (bản release): vùng cao dưới 160 px được phóng to x2 bilinear trước khi OCR vì không phóng thì chữ 18 px bị dính chữ ("Xto"). Có phóng: 6-23 ms cho ảnh mẫu 414x76 đến 972x136; chạy thật trên màn hình vùng 1200x150: 34-43 ms. Không phóng: 2-3 ms nhưng sai ở chữ nhỏ. Đạt mục tiêu 30-100 ms.
+  - Giới hạn: chữ cỡ 14 px vẫn đọc dính chữ dù phóng. Chưa thử ảnh phụ đề GTA thật (chưa có ảnh), chưa thử qua OBS Projector/capture card.

@@ -80,6 +80,37 @@ pub fn encode_bmp(f: &Frame) -> Vec<u8> {
     out
 }
 
+/// Decode an uncompressed 24-bit or 32-bit BMP into a BGRA frame.
+pub fn decode_bmp(d: &[u8]) -> Result<Frame, String> {
+    let rd = |o: usize, n: usize| d.get(o..o + n).ok_or("file BMP bi cat cut".to_string());
+    if rd(0, 2)? != b"BM" {
+        return Err("khong phai file BMP".into());
+    }
+    let u32at = |o: usize| rd(o, 4).map(|b| u32::from_le_bytes(b.try_into().unwrap()));
+    let off = u32at(10)? as usize;
+    let width = u32at(18)? as i32;
+    let height = u32at(22)? as i32;
+    let bpp = u16::from_le_bytes(rd(28, 2)?.try_into().unwrap());
+    if u32at(30)? != 0 && u32at(30)? != 3 {
+        return Err("chi ho tro BMP khong nen".into());
+    }
+    if width <= 0 || height == 0 || !(bpp == 24 || bpp == 32) {
+        return Err("chi ho tro BMP 24 hoac 32 bit".into());
+    }
+    let (w, h) = (width as usize, height.unsigned_abs() as usize);
+    let bytes = bpp as usize / 8;
+    let row = (w * bytes).div_ceil(4) * 4;
+    let mut bgra = Vec::with_capacity(w * h * 4);
+    for y in 0..h {
+        let sy = if height > 0 { h - 1 - y } else { y };
+        let line = rd(off + sy * row, w * bytes)?;
+        for px in line.chunks_exact(bytes) {
+            bgra.extend_from_slice(&[px[0], px[1], px[2], 255]);
+        }
+    }
+    Ok(Frame { width: w as u32, height: h as u32, bgra })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,5 +155,16 @@ mod tests {
         // 3 px * 3 bytes = 9 -> padded to 12 per row
         assert_eq!(bmp.len(), 54 + 12 * 2);
         assert_eq!(u32::from_le_bytes(bmp[2..6].try_into().unwrap()) as usize, bmp.len());
+    }
+
+    #[test]
+    fn bmp_roundtrip() {
+        let bgra: Vec<u8> = (0..4 * 3).flat_map(|i| [i as u8, 2 * i as u8, 3 * i as u8, 255]).collect();
+        let f = Frame { width: 4, height: 3, bgra: bgra.clone() };
+        let back = decode_bmp(&encode_bmp(&f)).unwrap();
+        assert_eq!((back.width, back.height), (4, 3));
+        assert_eq!(back.bgra, bgra);
+        assert!(decode_bmp(b"nope").is_err());
+        assert!(decode_bmp(&encode_bmp(&f)[..40]).is_err());
     }
 }
