@@ -1,0 +1,6 @@
+# SHA256 cua model NLLB-200-distilled-600M da doi sang CTranslate2 int8 (scripts/prepare-model.cmd).
+# Dinh dang: sha256  ten_file
+72901fbd8abd89fb5cf4a388f26fc681f5c4c58a1e1a88b30b879f107270e7ee  config.json
+398726640cc2a02cc6a35277fa3cf2159ce8a1a66b48aa1b6c8837a47e3dd00c  model.bin
+768aa4170693765cb4c62fc485ea4fd954cd3e5a44bc645d11d83f41f2393776  shared_vocabulary.json
+e316b82de11d0f951f370943b3c438311629547285129b0b81dadabd01bca665  tokenizer.json

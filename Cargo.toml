@@ -24,6 +24,10 @@ windows = { version = "=0.62.2", features = [
     "Foundation",
 ] }
 
+# Dich bang CTranslate2 (C++ bien dich tinh vao .exe, chay CPU). Chi bat tokenizers (HF) + ruy.
+ct2rs = { version = "=0.11.2", default-features = false, features = ["tokenizers", "ruy"] }
+sha2 = "=0.10.9"
+
 [profile.release]
 opt-level = 3
 lto = true

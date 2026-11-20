@@ -1,0 +1,7 @@
+# ct2rs (CTranslate2 bang C++) can CRT tinh de link duoc tren MSVC, va build bang Ninja.
+# Build qua scripts/build.cmd de co du moi truong MSVC (INCLUDE, LIB).
+[build]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[env]
+CMAKE_GENERATOR = "Ninja"

@@ -58,7 +58,7 @@ Ràng buộc:
   - CLI mới: `translator-ai ocr --image file.bmp` và `ocr --window ... --region ...`.
   - Test: unit test cộng ảnh mẫu có chữ tiếng Anh (tự render hoặc xin ảnh phụ đề GTA từ người dùng). Thử nhiều cỡ chữ và nền. Nếu chữ nhỏ thì phóng to hoặc tăng tương phản trước khi OCR.
   - Mục tiêu tốc độ OCR 30-100 ms cho vùng phụ đề. Ghi số đo thật vào nhật ký.
-- [ ] **3. Dịch**: benchmark vài model Anh->Việt chạy CPU, chọn cái cân bằng tốc độ/chất lượng; thêm cache + từ điển
+- [x] **3. Dịch**: benchmark vài model Anh->Việt chạy CPU, chọn cái cân bằng tốc độ/chất lượng; thêm cache + từ điển (xong, nhưng tốc độ cache miss ~520 ms, CHƯA đạt mục tiêu 50-150 ms, xem nhật ký)
 - [ ] **4. Overlay**: cửa sổ trong suốt click-through, đặt bản dịch trên chữ gốc, chỉnh font/vị trí/vùng quét
 - [ ] **5. Ghép pipeline**: đa luồng, bỏ qua khung không đổi, chống nhấp nháy khi chữ đổi
 - [ ] **6. OBS**: trang overlay localhost cho Browser Source (nền trong suốt), kiểm tra trên OBS, hướng dẫn cài cho streamer
@@ -81,3 +81,9 @@ Ràng buộc:
   - Đo: copy GPU->CPU vùng phụ đề 1200x150 tb **0.32 ms** (max 1.27); cả màn hình tb 4.9 ms. Nên chỉ copy vùng phụ đề. Phát hiện đổi khung đúng: vùng tĩnh chỉ 1 khung "đổi", vùng chuyển động gần như mọi khung.
   - Độ trễ khung -> app: tb 0.3-1.7 ms, max 32-40 ms (thỉnh thoảng trễ, đo bằng mốc thời gian của Windows nên sai số vài ms, có lúc ra số âm). File .exe release 215 KB.
   - Chưa đo tải CPU % và chưa thử với hình PS5/Elgato thật.
+- 2026-11-20: **xong giai đoạn 3 (dịch), chất lượng đạt, tốc độ chưa đạt**. Code: `src/translate.rs` (NLLB-200-distilled-600M qua CTranslate2 int8 bằng crate `ct2rs`, cache 512 câu, từ điển tên riêng `glossary.txt`), CLI `translator-ai translate [--bench] [--threads N] ["câu"]` và `translator-ai model verify`. Model để ở `models/` (ngoài git), SHA256 pin trong `model-manifest.txt`, kiểm tra mỗi lần nạp (~0.4 s). Tạo model: `scripts/prepare-model.cmd`. Build: `scripts/build.cmd` (cần cmake + ninja + MSVC, link CRT tĩnh).
+  - Benchmark Python CTranslate2 int8 (MKL), 10 câu kiểu GTA, i5-14600KF: opus-mt-en-vi tb 23-31 ms nhưng dịch sai nặng câu ngắn ("Buy a new outfit" ra rác); m2m100-418M tb 175-210 ms, nhiều câu gượng; **NLLB-600M tb 228-265 ms, dịch tự nhiên nhất** (giữ đúng Vice City, Leonida Keys). envit5 không convert được. Chọn NLLB-600M.
+  - Đo thật bản Rust (ruy, greedy, 6 luồng): **cache miss tb 520-540 ms** (365-740 ms), cache hit 0.0005 ms, nạp model 1.3 s. Chậm hơn Python gấp ~2 vì backend `ruy` kém MKL/oneDNN. Thử `mkl` (build script tải binary từ mạng, lỗi) và `dnnl` (lỗi link do trộn CRT) đều chưa chạy được, bỏ.
+  - Test: 11 unit test pass (gồm 1 test chạy model thật), clippy sạch, release build ok (.exe 5.2 MB, chưa tính model 622 MB). Từ điển 16 mục, tên riêng giữ đúng trong test.
+  - Việc còn lại để đạt 50-150 ms: sửa link oneDNN (cung cấp symbol math, hoặc build cả chuỗi bằng /MD), hoặc dùng model nhỏ hơn/chưng cất riêng cho phụ đề GTA, hoặc dịch song song với OCR dòng kế. Chưa đo trên máy yếu của streamer. Số liệu Python ở trên là máy này, MKL.
+

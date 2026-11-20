@@ -1,0 +1,18 @@
+# Tu dien ten rieng GTA: "tieng Anh = chu hien ra". Ten rieng giu nguyen thi ve phai giong ve trai.
+# Them muc rieng vao models/<model>/glossary.txt (uu tien hon file nay).
+Los Santos = Los Santos
+Vice City = Vice City
+Leonida Keys = Leonida Keys
+Leonida = Leonida
+Ocean Drive = Ocean Drive
+Grassrivers = Grassrivers
+Port Gellhorn = Port Gellhorn
+Ambrosia = Ambrosia
+Kalaga Bay = Kalaga Bay
+Mount Kalaga = Mount Kalaga
+Lucia = Lucia
+Jason = Jason
+Rockstar Games = Rockstar Games
+Rockstar = Rockstar
+GTA = GTA
+LSPD = LSPD

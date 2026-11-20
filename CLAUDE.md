@@ -49,3 +49,5 @@ Khi ghi file có ký tự dấu lớn hơn (kể cả trong mũi tên của comm
 - `src/capture.rs`: Windows Graphics Capture, chụp cửa sổ hoặc màn hình chính, cắt vùng, tự lùi về WARP nếu không có GPU.
 - `src/frame.rs`: `Region`, `Frame` (BGRA8 đóng gói chặt), `fnv1a`, `encode_bmp`, có unit test.
 - `src/main.rs`: CLI `translator-ai capture` với `--list`, `--window`, `--monitor`, `--region x,y,w,h`, `--seconds`, `--save`.
+- `src/translate.rs`: dịch Anh -> Việt (NLLB-600M, CTranslate2 int8), cache, từ điển `glossary.txt`, kiểm SHA256 theo `model-manifest.txt`. Build/test dùng `scripts/build.cmd` (đặt `CT2_TOOLS` trỏ tới thư mục có cmake và ninja). Model nằm ở `models/nllb-600m-int8` (không commit).
+

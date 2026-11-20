@@ -1,5 +1,6 @@
 mod capture;
 mod frame;
+mod translate;
 
 use capture::Target;
 use frame::{Frame, Region, encode_bmp};
@@ -43,6 +44,11 @@ fn parse_args() -> Result<Args, String> {
 }
 
 fn run() -> Result<(), String> {
+    match std::env::args().nth(1).as_deref() {
+        Some("translate") => return run_translate(),
+        Some("model") => return run_model(),
+        _ => {}
+    }
     let args = parse_args()?;
     unsafe { RoInitialize(RO_INIT_MULTITHREADED) }.map_err(|e| e.to_string())?;
 
@@ -98,6 +104,80 @@ fn run() -> Result<(), String> {
     }
     if frames == 0 {
         return Err("khong nhan duoc khung hinh nao".into());
+    }
+    Ok(())
+}
+
+fn model_dir(args: &[String]) -> std::path::PathBuf {
+    let pos = args.iter().position(|a| a == "--model");
+    pos.and_then(|i| args.get(i + 1))
+        .map_or(translate::DEFAULT_MODEL_DIR.into(), Into::into)
+}
+
+fn run_model() -> Result<(), String> {
+    let args: Vec<String> = std::env::args().skip(2).collect();
+    if args.first().map(String::as_str) != Some("verify") {
+        return Err(USAGE.into());
+    }
+    let dir = model_dir(&args);
+    let t = Instant::now();
+    translate::verify_model(&dir)?;
+    println!("model OK, SHA256 khop ({:.1} s): {}", t.elapsed().as_secs_f64(), dir.display());
+    Ok(())
+}
+
+fn run_translate() -> Result<(), String> {
+    let args: Vec<String> = std::env::args().skip(2).collect();
+    let dir = model_dir(&args);
+    let mut threads = 0usize;
+    let mut bench = false;
+    let mut texts = Vec::new();
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--model" => i += 1,
+            "--threads" => {
+                i += 1;
+                threads = args.get(i).and_then(|v| v.parse().ok()).ok_or("--threads phai la so")?;
+            }
+            "--bench" => bench = true,
+            t => texts.push(t.to_string()),
+        }
+        i += 1;
+    }
+    let t0 = Instant::now();
+    let mut tr = translate::Translator::load(&dir, threads)?;
+    println!("nap model (gom kiem SHA256): {:.2} s, tu dien {} muc", t0.elapsed().as_secs_f64(), tr.glossary_len());
+    if texts.is_empty() {
+        texts = translate::BENCH_SENTENCES.iter().map(|s| s.to_string()).collect();
+    }
+    let rounds = if bench { 3 } else { 1 };
+    let (mut miss_ms, mut miss_n, mut hit_ms, mut hit_n) = (0.0f64, 0u32, 0.0f64, 0u32);
+    for round in 0..rounds {
+        for text in &texts {
+            let t = Instant::now();
+            let out = tr.translate(text)?;
+            let ms = t.elapsed().as_secs_f64() * 1000.0;
+            if out.cached {
+                hit_ms += ms;
+                hit_n += 1;
+            } else {
+                miss_ms += ms;
+                miss_n += 1;
+            }
+            if round == 0 {
+                println!("[{ms:7.1} ms{}] {text}
+            => {}", if out.cached { " cache" } else { "" }, out.text);
+            }
+        }
+    }
+    if bench {
+        if miss_n > 0 {
+            println!("cache miss: {miss_n} cau, tb {:.1} ms", miss_ms / miss_n as f64);
+        }
+        if hit_n > 0 {
+            println!("cache hit : {hit_n} cau, tb {:.4} ms", hit_ms / hit_n as f64);
+        }
     }
     Ok(())
 }
