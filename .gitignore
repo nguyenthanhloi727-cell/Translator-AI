@@ -1,0 +1,8 @@
+﻿target/
+models/
+*.wav
+*.bin
+*.gguf
+*.onnx
+.env
+
