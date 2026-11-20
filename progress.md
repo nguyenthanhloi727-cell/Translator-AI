@@ -51,7 +51,7 @@ Ràng buộc:
 
 - [x] **0. Khởi tạo**: progress.md, CLAUDE.md, git init, .gitignore, repo public MIT
 - [x] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
-- [ ] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
+- [x] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
   - Dùng Windows.Media.Ocr (có sẵn, chạy CPU, không tải model). Thêm feature windows crate cần thiết như Media_Ocr, Graphics_Imaging, Storage_Streams.
   - Module mới `src/ocr.rs`: nhận `Frame`, trả về text và vị trí dòng. Báo lỗi rõ nếu máy thiếu gói ngôn ngữ OCR tiếng Anh.
   - Chỉ OCR khi vùng phụ đề đổi (dùng cờ `changed` của capture).
@@ -81,3 +81,8 @@ Ràng buộc:
   - Đo: copy GPU->CPU vùng phụ đề 1200x150 tb **0.32 ms** (max 1.27); cả màn hình tb 4.9 ms. Nên chỉ copy vùng phụ đề. Phát hiện đổi khung đúng: vùng tĩnh chỉ 1 khung "đổi", vùng chuyển động gần như mọi khung.
   - Độ trễ khung -> app: tb 0.3-1.7 ms, max 32-40 ms (thỉnh thoảng trễ, đo bằng mốc thời gian của Windows nên sai số vài ms, có lúc ra số âm). File .exe release 215 KB.
   - Chưa đo tải CPU % và chưa thử với hình PS5/Elgato thật.
+- 2026-11-20: **xong giai đoạn 2 (OCR)**. Code: `src/ocr.rs` (Windows.Media.Ocr, en-US, trả dòng chữ + khung bao), `frame.rs` thêm `decode_bmp` và `upscale` (phóng to bilinear), CLI `translator-ai ocr --image f.bmp | --window/--monitor --region --seconds --scale N --show`. OCR chỉ chạy khi khung đổi (cờ `changed`). Thiếu gói ngôn ngữ OCR thì báo hướng dẫn cài.
+  - Test: 13 unit test pass, clippy sạch, build release ok. Ảnh mẫu tự render bằng GDI (Arial đậm): chữ trắng/nền tối cỡ 24, 32, 48 px, chữ đen/nền sáng, chữ vàng/nền màu, ảnh trống, ảnh quá lớn đều đúng.
+  - Chữ nhỏ: cỡ 14 px trở lên đọc đúng ở x1; cỡ 10-12 px sai ở x1 ("Bw a new outfit", hoặc rỗng) nhưng đúng khi phóng x2 hoặc x3. Dùng `--scale 2` khi chữ phụ đề nhỏ.
+  - Tốc độ: vùng 1312x84 chữ cỡ 32 px tb **2.4 ms** (release, đã warm up); chạy thật trên vùng 1200x150 màn hình: 14.6 ms (x1), 22.3 ms (x2), chỉ 1 lần đo nên chỉ tham khảo. Đều dưới mục tiêu 30-100 ms.
+  - Chưa kiểm chứng: ảnh phụ đề GTA thật (chưa có ảnh mẫu, font game khác Arial), hình PS5/Elgato thật, chạy CLI `--image` bằng tay (đã test `decode_bmp` bằng unit test).
