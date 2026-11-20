@@ -49,3 +49,5 @@ Khi ghi file có ký tự dấu lớn hơn (kể cả trong mũi tên của comm
 - `src/capture.rs`: Windows Graphics Capture, chụp cửa sổ hoặc màn hình chính, cắt vùng, tự lùi về WARP nếu không có GPU.
 - `src/frame.rs`: `Region`, `Frame` (BGRA8 đóng gói chặt), `fnv1a`, `encode_bmp`, có unit test.
 - `src/main.rs`: CLI `translator-ai capture` với `--list`, `--window`, `--monitor`, `--region x,y,w,h`, `--seconds`, `--save`.
+- `src/ocr.rs`: `Ocr::new()`, `recognize(&Frame)` tra ve cac dong chu kem toa do (Windows.Media.Ocr, en-US), tu phong to chu nho. `frame::decode_bmp` doc BMP.
+- `src/main.rs`: them CLI `translator-ai ocr` voi `--image file.bmp` hoac `--window`/`--monitor`, `--region`, `--seconds`.

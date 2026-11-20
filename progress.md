@@ -51,7 +51,7 @@ Ràng buộc:
 
 - [x] **0. Khởi tạo**: progress.md, CLAUDE.md, git init, .gitignore, repo public MIT
 - [x] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
-- [ ] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
+- [x] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
   - Dùng Windows.Media.Ocr (có sẵn, chạy CPU, không tải model). Thêm feature windows crate cần thiết như Media_Ocr, Graphics_Imaging, Storage_Streams.
   - Module mới `src/ocr.rs`: nhận `Frame`, trả về text và vị trí dòng. Báo lỗi rõ nếu máy thiếu gói ngôn ngữ OCR tiếng Anh.
   - Chỉ OCR khi vùng phụ đề đổi (dùng cờ `changed` của capture).
@@ -81,3 +81,8 @@ Ràng buộc:
   - Đo: copy GPU->CPU vùng phụ đề 1200x150 tb **0.32 ms** (max 1.27); cả màn hình tb 4.9 ms. Nên chỉ copy vùng phụ đề. Phát hiện đổi khung đúng: vùng tĩnh chỉ 1 khung "đổi", vùng chuyển động gần như mọi khung.
   - Độ trễ khung -> app: tb 0.3-1.7 ms, max 32-40 ms (thỉnh thoảng trễ, đo bằng mốc thời gian của Windows nên sai số vài ms, có lúc ra số âm). File .exe release 215 KB.
   - Chưa đo tải CPU % và chưa thử với hình PS5/Elgato thật.
+- 2026-11-20: **xong giai doan 2 (OCR)**. Code: `src/ocr.rs` (Windows.Media.Ocr, en-US, bao loi ro neu thieu goi ngon ngu), `decode_bmp` trong `src/frame.rs`, CLI `translator-ai ocr --image file.bmp` va `ocr --window/--monitor --region --seconds` (chi OCR khi vung doi).
+  - Test: 12 unit test pass (them 7), clippy sach, build release chay. Anh mau tu ve bang GDI: chu den tren nen trang co 16/20/24/32/48 px doc dung 100%; chu trang tren nen toi co nhieu, 24/32/40 px doc dung 100%. Toa do dong tra ve theo anh goc (da chia lai he so phong to).
+  - Chu nho thi tu phong to (noi suy tuyen tinh): cao tu 60 px tro xuong x3, tu 61 den 120 px x2.
+  - Toc do OCR (release, 1 dong phu de, anh 1000-1700 px rong): chu 24 px tb 12 ms, 32 px 19 ms, 40 px 27 ms. Chay that tren vung man hinh 1200x150: tb 6.8 ms, max 49 ms. Deu nam trong hoac nhanh hon muc tieu 30-100 ms.
+  - Chua kiem chung: anh phu de GTA that (font, vien, nen phuc tap) va hinh PS5/Elgato that; do chinh xac moi dua tren chu tu ve bang Arial. Can anh mau tu streamer o cau hoi mo so 3.

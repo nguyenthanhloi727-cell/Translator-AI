@@ -80,9 +80,51 @@ pub fn encode_bmp(f: &Frame) -> Vec<u8> {
     out
 }
 
+/// Doc BMP khong nen 24 hoac 32 bit (dung cho `ocr --image`).
+pub fn decode_bmp(d: &[u8]) -> Result<Frame, String> {
+    let u16_at = |o: usize| d.get(o..o + 2).map(|b| u16::from_le_bytes([b[0], b[1]]));
+    let u32_at = |o: usize| d.get(o..o + 4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
+    if d.get(..2) != Some(b"BM") {
+        return Err("khong phai file BMP".into());
+    }
+    let (Some(off), Some(w), Some(h), Some(bpp), Some(comp)) =
+        (u32_at(10), u32_at(18), u32_at(22), u16_at(28), u32_at(30))
+    else {
+        return Err("file BMP bi cut".into());
+    };
+    let (h, top_down) = ((h as i32).unsigned_abs(), (h as i32) < 0);
+    if comp != 0 || (bpp != 24 && bpp != 32) || w == 0 || h == 0 {
+        return Err("chi ho tro BMP 24/32 bit khong nen".into());
+    }
+    let (w, off, bytes) = (w as usize, off as usize, bpp as usize / 8);
+    let row = (w * bytes).div_ceil(4) * 4;
+    if d.len() < off + row * h as usize {
+        return Err("file BMP bi cut".into());
+    }
+    let mut bgra = Vec::with_capacity(w * h as usize * 4);
+    for y in 0..h as usize {
+        let sy = if top_down { y } else { h as usize - 1 - y };
+        let line = &d[off + sy * row..off + sy * row + w * bytes];
+        for px in line.chunks_exact(bytes) {
+            bgra.extend_from_slice(&[px[0], px[1], px[2], 255]);
+        }
+    }
+    Ok(Frame { width: w as u32, height: h, bgra })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bmp_roundtrip() {
+        let bgra: Vec<u8> = (0..5 * 3).flat_map(|i| [i as u8, 2 * i as u8, 3 * i as u8, 255]).collect();
+        let f = Frame { width: 5, height: 3, bgra: bgra.clone() };
+        let g = decode_bmp(&encode_bmp(&f)).unwrap();
+        assert_eq!((g.width, g.height), (5, 3));
+        assert_eq!(g.bgra, bgra);
+        assert!(decode_bmp(b"nope").is_err());
+    }
 
     #[test]
     fn parse_region_ok() {
