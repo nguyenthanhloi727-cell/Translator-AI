@@ -86,4 +86,9 @@ Ràng buộc:
   - Đo thật bản Rust (ruy, greedy, 6 luồng): **cache miss tb 520-540 ms** (365-740 ms), cache hit 0.0005 ms, nạp model 1.3 s. Chậm hơn Python gấp ~2 vì backend `ruy` kém MKL/oneDNN. Thử `mkl` (build script tải binary từ mạng, lỗi) và `dnnl` (lỗi link do trộn CRT) đều chưa chạy được, bỏ.
   - Test: 11 unit test pass (gồm 1 test chạy model thật), clippy sạch, release build ok (.exe 5.2 MB, chưa tính model 622 MB). Từ điển 16 mục, tên riêng giữ đúng trong test.
   - Việc còn lại để đạt 50-150 ms: sửa link oneDNN (cung cấp symbol math, hoặc build cả chuỗi bằng /MD), hoặc dùng model nhỏ hơn/chưng cất riêng cho phụ đề GTA, hoặc dịch song song với OCR dòng kế. Chưa đo trên máy yếu của streamer. Số liệu Python ở trên là máy này, MKL.
+- 2026-11-20: **thử tăng tốc dịch, chưa đạt 150 ms, không đổi code**.
+  - oneDNN (`dnnl`): build 4 lần đều lỗi link vì trộn CRT tĩnh/động (`esaxx-rs` luôn /MT, oneDNN và glue của CTranslate2 /MD, thiếu `scalbnf`/`fminf`/`expm1f`; shim 3 hàm không đủ). Bỏ.
+  - Giới hạn từ vựng đầu ra (`vmap.txt`, bật `use_vmap`): lớp xuất NLLB có 256k token. Python MKL, 6 luồng: 26k token tb 159 ms (từ 230-300), 44k token 172 ms, 66k token 197 ms, nhưng càng ít token càng sai tên riêng ("Vice City" ra "thành phố", "Ocean Drive" ra "đường xe Đại Dương"), và 66k vẫn dịch "Lucia" thành "Lucy". Trên bản Rust (66k token) nhanh hơn ~35-40%.
+  - Số đo Rust lần này nhiễu: máy đang chạy game (CPU ~50%), baseline lên 900-1000 ms (lúc máy rảnh là 520-540 ms), vmap 66k còn ~590 ms cùng điều kiện. Chưa có số sạch.
+  - Kết luận: vmap đánh đổi chất lượng lấy ~35% tốc độ, chưa đủ chạm 150 ms nên không bật. Hướng còn lại: MKL (cần nguồn MKL đáng tin và build không tải binary lúc build), hoặc model nhỏ hơn/chưng cất riêng cho câu phụ đề, hoặc chấp nhận ~500 ms vì dịch chạy luồng riêng, cache chặn câu lặp và phụ đề GTA thường hiện vài giây.
 
