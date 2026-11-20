@@ -61,7 +61,7 @@ Ràng buộc:
 
 ## Câu hỏi mở
 
-1. Streamer đưa hình PS5 vào PC bằng gì: capture card (Elgato, AVerMedia...) hay PS Remote Play? Xem hình trong OBS hay app riêng?
+1. (Tạm chốt, cần xác nhận với sangtran) Hình PS5 vào PC chỉ qua OBS. App chụp cửa sổ **OBS Projector** (chuột phải source > Windowed Projector). Nếu streamer dùng app khác (Elgato, Remote Play) thì chụp cửa sổ đó, cùng cách.
 2. Cấu hình máy streamer (CPU/RAM), có thể để sau.
 3. Có ảnh chụp màn hình GTA mẫu (có phụ đề) để test OCR không? Chưa có GTA 6 thì dùng GTA 5/ảnh mẫu.
 
