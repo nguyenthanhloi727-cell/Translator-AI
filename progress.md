@@ -52,6 +52,12 @@ Ràng buộc:
 - [x] **0. Khởi tạo**: progress.md, CLAUDE.md, git init, .gitignore, repo public MIT
 - [x] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
 - [ ] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
+  - Dùng Windows.Media.Ocr (có sẵn, chạy CPU, không tải model). Thêm feature windows crate cần thiết như Media_Ocr, Graphics_Imaging, Storage_Streams.
+  - Module mới `src/ocr.rs`: nhận `Frame`, trả về text và vị trí dòng. Báo lỗi rõ nếu máy thiếu gói ngôn ngữ OCR tiếng Anh.
+  - Chỉ OCR khi vùng phụ đề đổi (dùng cờ `changed` của capture).
+  - CLI mới: `translator-ai ocr --image file.bmp` và `ocr --window ... --region ...`.
+  - Test: unit test cộng ảnh mẫu có chữ tiếng Anh (tự render hoặc xin ảnh phụ đề GTA từ người dùng). Thử nhiều cỡ chữ và nền. Nếu chữ nhỏ thì phóng to hoặc tăng tương phản trước khi OCR.
+  - Mục tiêu tốc độ OCR 30-100 ms cho vùng phụ đề. Ghi số đo thật vào nhật ký.
 - [ ] **3. Dịch**: benchmark vài model Anh->Việt chạy CPU, chọn cái cân bằng tốc độ/chất lượng; thêm cache + từ điển
 - [ ] **4. Overlay**: cửa sổ trong suốt click-through, đặt bản dịch trên chữ gốc, chỉnh font/vị trí/vùng quét
 - [ ] **5. Ghép pipeline**: đa luồng, bỏ qua khung không đổi, chống nhấp nháy khi chữ đổi
