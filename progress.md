@@ -51,7 +51,7 @@ Ràng buộc:
 
 - [x] **0. Khởi tạo**: progress.md, CLAUDE.md, git init, .gitignore, repo public MIT
 - [x] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
-- [ ] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
+- [x] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
   - Dùng Windows.Media.Ocr (có sẵn, chạy CPU, không tải model). Thêm feature windows crate cần thiết như Media_Ocr, Graphics_Imaging, Storage_Streams.
   - Module mới `src/ocr.rs`: nhận `Frame`, trả về text và vị trí dòng. Báo lỗi rõ nếu máy thiếu gói ngôn ngữ OCR tiếng Anh.
   - Chỉ OCR khi vùng phụ đề đổi (dùng cờ `changed` của capture).
@@ -81,3 +81,8 @@ Ràng buộc:
   - Đo: copy GPU->CPU vùng phụ đề 1200x150 tb **0.32 ms** (max 1.27); cả màn hình tb 4.9 ms. Nên chỉ copy vùng phụ đề. Phát hiện đổi khung đúng: vùng tĩnh chỉ 1 khung "đổi", vùng chuyển động gần như mọi khung.
   - Độ trễ khung -> app: tb 0.3-1.7 ms, max 32-40 ms (thỉnh thoảng trễ, đo bằng mốc thời gian của Windows nên sai số vài ms, có lúc ra số âm). File .exe release 215 KB.
   - Chưa đo tải CPU % và chưa thử với hình PS5/Elgato thật.
+- 2026-11-20: **xong giai doan 2 (OCR)**. Code: `src/ocr.rs` (Windows.Media.Ocr, engine en-US, tra ve dong chu + khung bao), `frame.rs` them `decode_bmp` va `scale_up` (phong to bilinear), CLI `translator-ai ocr --image f.bmp | --window/--monitor --region ... --scale K` (chi OCR khi khung doi). Bao loi ro neu may thieu goi OCR tieng Anh.
+  - Test: 12 unit test pass (5 test OCR tren anh tu render bang GDI: trang tren toi, toi tren sang, vang tren xanh, chu nho 14px phai phong to x3 moi doc duoc, anh trong khong ra dong nao), clippy sach, build release chay duoc (exe 248 KB).
+  - Do: OCR vung 1200x150 chu 36px tb **3.4 ms** (release), CLI tren anh BMP 3.5-7 ms. Thap hon nhieu so voi muc tieu 30-100 ms, nhung anh mau la chu GDI sach, chu game that co vien/nen phuc tap se cham hon.
+  - Chua kiem chung: anh phu de GTA that (chua co mau), duong `ocr --window` chup that (chua chay de khong in noi dung man hinh nguoi dung), do chinh xac tren font GTA. Region cat qua hep lam mat chu cuoi (da thay khi cat 400px).
+

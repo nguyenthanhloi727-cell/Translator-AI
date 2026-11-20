@@ -80,6 +80,67 @@ pub fn encode_bmp(f: &Frame) -> Vec<u8> {
     out
 }
 
+/// Decode an uncompressed 24 or 32-bit BMP (what `encode_bmp` and most screenshot tools write).
+pub fn decode_bmp(data: &[u8]) -> Result<Frame, String> {
+    let u16_at = |o: usize| data.get(o..o + 2).map(|b| u16::from_le_bytes([b[0], b[1]]));
+    let u32_at =
+        |o: usize| data.get(o..o + 4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
+    if data.get(..2) != Some(b"BM") {
+        return Err("khong phai file BMP".into());
+    }
+    let (Some(off), Some(w), Some(h), Some(bpp), Some(comp)) =
+        (u32_at(10), u32_at(18), u32_at(22), u16_at(28), u32_at(30))
+    else {
+        return Err("file BMP bi cat".into());
+    };
+    let (w, top_down, h) = (w as usize, (h as i32) < 0, (h as i32).unsigned_abs() as usize);
+    if comp != 0 || (bpp != 24 && bpp != 32) || w == 0 || h == 0 {
+        return Err("chi ho tro BMP 24/32-bit khong nen".into());
+    }
+    let bytes = (bpp / 8) as usize;
+    let row = (w * bytes).div_ceil(4) * 4;
+    let body = data.get(off as usize..).ok_or("file BMP bi cat")?;
+    if body.len() < row * (h - 1) + w * bytes {
+        return Err("file BMP bi cat".into());
+    }
+    let mut bgra = Vec::with_capacity(w * h * 4);
+    for y in 0..h {
+        let sy = if top_down { y } else { h - 1 - y };
+        let line = &body[sy * row..sy * row + w * bytes];
+        for px in line.chunks_exact(bytes) {
+            bgra.extend_from_slice(&[px[0], px[1], px[2], 255]);
+        }
+    }
+    Ok(Frame { width: w as u32, height: h as u32, bgra })
+}
+
+/// Enlarge by an integer factor with bilinear smoothing (small subtitle text reads better).
+pub fn scale_up(f: &Frame, k: u32) -> Frame {
+    if k <= 1 {
+        return Frame { width: f.width, height: f.height, bgra: f.bgra.clone() };
+    }
+    let (w, h, k) = (f.width as usize, f.height as usize, k as usize);
+    let (nw, nh) = (w * k, h * k);
+    let mut out = vec![0u8; nw * nh * 4];
+    for y in 0..nh {
+        let fy = ((y as f32 + 0.5) / k as f32 - 0.5).clamp(0.0, (h - 1) as f32);
+        let (y0, ty) = (fy as usize, fy.fract());
+        let y1 = (y0 + 1).min(h - 1);
+        for x in 0..nw {
+            let fx = ((x as f32 + 0.5) / k as f32 - 0.5).clamp(0.0, (w - 1) as f32);
+            let (x0, tx) = (fx as usize, fx.fract());
+            let x1 = (x0 + 1).min(w - 1);
+            for c in 0..4 {
+                let p = |xx: usize, yy: usize| f.bgra[(yy * w + xx) * 4 + c] as f32;
+                let top = p(x0, y0) * (1.0 - tx) + p(x1, y0) * tx;
+                let bot = p(x0, y1) * (1.0 - tx) + p(x1, y1) * tx;
+                out[(y * nw + x) * 4 + c] = (top * (1.0 - ty) + bot * ty + 0.5) as u8;
+            }
+        }
+    }
+    Frame { width: nw as u32, height: nh as u32, bgra: out }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,5 +185,23 @@ mod tests {
         // 3 px * 3 bytes = 9 -> padded to 12 per row
         assert_eq!(bmp.len(), 54 + 12 * 2);
         assert_eq!(u32::from_le_bytes(bmp[2..6].try_into().unwrap()) as usize, bmp.len());
+    }
+
+    #[test]
+    fn bmp_roundtrip() {
+        let bgra: Vec<u8> = (0..5 * 3).flat_map(|i| [i as u8, 2 * i as u8, 3, 255]).collect();
+        let f = Frame { width: 5, height: 3, bgra };
+        let back = decode_bmp(&encode_bmp(&f)).unwrap();
+        assert_eq!((back.width, back.height), (5, 3));
+        assert_eq!(back.bgra, f.bgra);
+        assert!(decode_bmp(b"nope").is_err());
+    }
+
+    #[test]
+    fn scale_up_doubles_size_and_keeps_flat_color() {
+        let f = Frame { width: 4, height: 3, bgra: vec![200; 4 * 3 * 4] };
+        let s = scale_up(&f, 2);
+        assert_eq!((s.width, s.height), (8, 6));
+        assert!(s.bgra.iter().all(|&b| b == 200));
     }
 }
