@@ -51,7 +51,7 @@ Ràng buộc:
 
 - [x] **0. Khởi tạo**: progress.md, CLAUDE.md, git init, .gitignore, repo public MIT
 - [x] **1. Capture**: chụp cửa sổ/vùng hiện hình PS5 bằng Windows Graphics Capture, đo độ trễ, đo tải CPU
-- [ ] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
+- [x] **2. OCR**: đọc chữ tiếng Anh từ ảnh mẫu GTA, đo tốc độ + độ chính xác
   - Dùng Windows.Media.Ocr (có sẵn, chạy CPU, không tải model). Thêm feature windows crate cần thiết như Media_Ocr, Graphics_Imaging, Storage_Streams.
   - Module mới `src/ocr.rs`: nhận `Frame`, trả về text và vị trí dòng. Báo lỗi rõ nếu máy thiếu gói ngôn ngữ OCR tiếng Anh.
   - Chỉ OCR khi vùng phụ đề đổi (dùng cờ `changed` của capture).
@@ -81,3 +81,8 @@ Ràng buộc:
   - Đo: copy GPU->CPU vùng phụ đề 1200x150 tb **0.32 ms** (max 1.27); cả màn hình tb 4.9 ms. Nên chỉ copy vùng phụ đề. Phát hiện đổi khung đúng: vùng tĩnh chỉ 1 khung "đổi", vùng chuyển động gần như mọi khung.
   - Độ trễ khung -> app: tb 0.3-1.7 ms, max 32-40 ms (thỉnh thoảng trễ, đo bằng mốc thời gian của Windows nên sai số vài ms, có lúc ra số âm). File .exe release 215 KB.
   - Chưa đo tải CPU % và chưa thử với hình PS5/Elgato thật.
+- 2026-11-20: **xong giai đoạn 2 (OCR)**. Code: `src/ocr.rs` (Windows.Media.Ocr, en-US, trả dòng chữ + khung, báo lỗi rõ nếu thiếu gói ngôn ngữ), `src/frame.rs` thêm `decode_bmp` và `upscale` (phóng to bilinear), CLI `translator-ai ocr --image f.bmp` hoặc `ocr --window|--monitor --region ... --seconds N --scale N`. Chỉ OCR khi vùng đổi (cờ `changed`), gom khung đến trong lúc OCR để chỉ xử lý khung mới nhất.
+  - Test: 13 unit test pass (ảnh tự render bằng GDI: chữ trắng trên nền tối, chữ đen trên nền sáng, nền gradient, câu kiểu GTA; ảnh trống không ra chữ; khung ánh xạ đúng về tọa độ gốc), clippy sạch, release build chạy được (.exe 251 KB).
+  - Đo tốc độ OCR (release, vùng 1200x150 chữ 32px): tb **3.2 ms**; vùng 1600x100 chữ 28px: tb **3.0 ms**. Phóng to x2: tb 18-21 ms. Chạy thật trên màn hình chính (vùng 1200x200 toàn chữ, cả UI trình duyệt): tb **11.5 ms**, max 25 ms. Tất cả nằm dưới mục tiêu 30-100 ms.
+  - Cỡ chữ: chữ cao 14px trở lên đọc đúng không cần phóng to; chữ 10-12px không đọc được (rỗng) nếu không phóng to, phóng to x3 đọc đúng; 8px vẫn không đọc được. Nên chụp 1080p trở lên, bật `--scale 2` hoặc 3 nếu phụ đề nhỏ.
+  - Chưa kiểm chứng: ảnh phụ đề GTA thật (chỉ có ảnh tự render, font Arial/Segoe UI; chữ GTA có viền/bóng nên có thể kém hơn), hình PS5/capture card thật, độ chính xác trên nền video chuyển động. Đường `ocr --image` chỉ được test qua unit test đọc/ghi BMP, chưa chạy tay trên file thật.
